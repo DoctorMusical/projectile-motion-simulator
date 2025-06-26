@@ -4,76 +4,118 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Projectile Motion Simulator</title>
-    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind CSS CDN for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter font from Google Fonts for a clean UI -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Custom CSS for a sleek look */
+        /* Custom CSS for a sleek, dark-themed user interface */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #1a202c; /* Dark background */
-            color: #e2e8f0; /* Light text color */
+            background-color: #1a202c; /* Dark background for the body */
+            color: #e2e8f0; /* Light text color for readability */
             margin: 0;
-            overflow: hidden; /* Prevent body scroll */
+            overflow: hidden; /* Prevent scrolling on the body */
             display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+            flex-direction: column; /* Stack elements vertically on small screens */
+            min-height: 100vh; /* Ensure body takes full viewport height */
         }
         #app-container {
             display: flex;
-            flex-grow: 1;
-            flex-direction: column; /* Default to column for small screens */
+            flex-grow: 1; /* Allows container to fill available space */
+            flex-direction: column; /* Default to column layout for small screens */
+            /* Media query for larger screens (md breakpoint: 768px) */
             @media (min-width: 768px) {
-                flex-direction: row; /* Row for larger screens */
+                flex-direction: row; /* Switch to row layout for larger screens */
             }
         }
         #controls {
-            flex-shrink: 0;
+            flex-shrink: 0; /* Prevent controls from shrinking */
             padding: 1.5rem;
-            background-color: #2d3748; /* Slightly lighter dark background for controls */
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin: 1rem;
-            width: auto; /* Adjust width naturally */
+            background-color: #2d3748; /* Slightly lighter dark background for the controls panel */
+            border-radius: 0.75rem; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+            margin: 1rem; /* Margin around the controls panel */
+            width: auto; /* Adjust width naturally on small screens */
+            /* Media query for larger screens */
             @media (min-width: 768px) {
                 width: 300px; /* Fixed width for controls on larger screens */
-                max-height: calc(100vh - 2rem); /* Max height to fit screen */
-                overflow-y: auto; /* Scroll if content overflows */
+                max-height: calc(100vh - 2rem); /* Max height to fit within viewport, accounting for margin */
+                overflow-y: auto; /* Enable vertical scrolling if content overflows */
             }
         }
         #canvas-container {
-            flex-grow: 1;
-            background-color: #2d3748; /* Match controls background */
+            flex-grow: 1; /* Canvas container takes up remaining space */
+            background-color: #2d3748; /* Match controls background for consistency */
             border-radius: 0.75rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             margin: 1rem;
-            overflow: hidden; /* Hide anything outside */
-            position: relative;
-            display: flex;
+            overflow: hidden; /* Hide any overflow */
+            position: relative; /* Needed for absolute positioning of message box and CSS2DRenderer */
+            display: flex; /* Use flexbox to center canvas content */
             justify-content: center;
             align-items: center;
-            min-height: 400px; /* Minimum height for canvas */
+            min-height: 400px; /* Minimum height for the 3D canvas */
+        }
+        /* Style for the CSS2DRenderer container */
+        .css-renderer-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none; /* Allow mouse events to pass through to WebGL canvas */
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
         }
         canvas {
             display: block;
-            width: 100% !important; /* Ensure canvas takes full width */
-            height: 100% !important; /* Ensure canvas takes full height */
+            width: 100% !important; /* Ensure canvas fills its container's width */
+            height: 100% !important; /* Ensure canvas fills its container's height */
         }
         label {
-            display: block;
+            display: block; /* Make labels block-level for better spacing */
             margin-bottom: 0.5rem;
             font-weight: 600;
             color: #cbd5e0;
         }
-        input[type="number"] {
+        input[type="number"], select {
             width: 100%;
             padding: 0.75rem;
             margin-bottom: 1rem;
             border-radius: 0.5rem;
-            border: 1px solid #4a5568;
-            background-color: #4a5568;
-            color: #e2e8f0;
+            border: 1px solid #4a5568; /* Darker border */
+            background-color: #4a5568; /* Dark background for inputs */
+            color: #e2e8f0; /* Light text color for input values */
             font-size: 1rem;
+        }
+        input[type="checkbox"] {
+            margin-right: 0.5rem;
+            /* Basic styling for checkbox */
+            appearance: none;
+            width: 1.25rem; /* 20px */
+            height: 1.25rem; /* 20px */
+            border: 2px solid #6366f1; /* Tailwind indigo-500 */
+            border-radius: 0.25rem; /* rounded-md */
+            background-color: #4a5568; /* Match input background */
+            cursor: pointer;
+            position: relative;
+            vertical-align: middle;
+            margin-top: -0.15em; /* Adjust alignment */
+        }
+        input[type="checkbox"]:checked {
+            background-color: #4299e1; /* Tailwind blue-500 */
+            border-color: #4299e1;
+        }
+        input[type="checkbox"]:checked::before {
+            content: '\2713'; /* Checkmark character */
+            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1em;
+            line-height: 1;
         }
         button {
             width: 100%;
@@ -82,30 +124,36 @@
             border: none;
             font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease-in-out;
+            transition: all 0.2s ease-in-out; /* Smooth transitions for hover effects */
             margin-bottom: 0.75rem;
         }
         button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px); /* Slight lift on hover */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
         .btn-primary {
-            background-color: #4299e1; /* Blue */
+            background-color: #4299e1; /* Primary blue color */
             color: white;
         }
         .btn-primary:hover {
-            background-color: #3182ce;
+            background-color: #3182ce; /* Darker blue on hover */
         }
         .btn-secondary {
-            background-color: #a0aec0; /* Gray */
-            color: #2d3748;
+            background-color: #a0aec0; /* Secondary gray color */
+            color: #2d3748; /* Dark text for secondary button */
         }
         .btn-secondary:hover {
-            background-color: #718096;
+            background-color: #718096; /* Darker gray on hover */
         }
         .stat-item {
             display: flex;
-            justify-content: space-between;
+            justify-content: space-between; /* Space out label and value */
             margin-bottom: 0.5rem;
         }
         .stat-label {
@@ -115,23 +163,34 @@
         .stat-value {
             color: #e2e8f0;
         }
+        /* Styles for the in-scene 3D text labels */
+        .label {
+            color: #e2e8f0; /* Light text */
+            font-family: 'Inter', sans-serif;
+            font-size: 16px; /* Base font size */
+            background: rgba(45, 55, 72, 0.8); /* Semi-transparent dark background */
+            padding: 4px 8px;
+            border-radius: 4px;
+            pointer-events: none; /* Important: allows mouse events to pass through */
+            white-space: nowrap; /* Prevent text wrapping */
+        }
         #message-box {
-            position: absolute;
+            position: absolute; /* Position relative to canvas-container */
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%); /* Center the box */
             background-color: #2d3748;
             color: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            z-index: 1000;
+            z-index: 1000; /* Ensure it's above canvas */
             display: none; /* Hidden by default */
             text-align: center;
         }
         #message-box button {
             margin-top: 15px;
-            width: auto;
+            width: auto; /* Adjust button width */
             padding: 10px 20px;
             background-color: #4299e1;
             color: white;
@@ -142,6 +201,7 @@
 </head>
 <body>
     <div id="app-container">
+        <!-- Controls Panel (Left Side) -->
         <div id="controls">
             <h2 class="text-2xl font-bold mb-6 text-center text-white">Projectile Simulator</h2>
 
@@ -160,9 +220,44 @@
                 <input type="number" id="gravity" value="9.81" min="0">
             </div>
 
-            <button id="startButton" class="btn-primary mb-3">Start Simulation</button>
-            <button id="resetButton" class="btn-secondary">Reset Simulation</button>
+            <div class="mb-4">
+                <label for="projectileShape">Projectile Shape</label>
+                <select id="projectileShape" class="rounded-lg">
+                    <option value="ball">Ball</option>
+                    <option value="car">Car</option>
+                    <option value="arrow">Arrow</option>
+                </select>
+            </div>
 
+            <div class="mb-4 flex items-center">
+                <input type="checkbox" id="enableAirResistance" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                <label for="enableAirResistance" class="mb-0 ml-2">Enable Air Resistance</label>
+            </div>
+
+            <div id="airResistanceOptions" class="mb-6" style="display: none;">
+                <label for="dragCoefficient">Drag Coefficient (Cd)</label>
+                <input type="number" id="dragCoefficient" value="0.47" min="0" step="0.01">
+            </div>
+
+            <!-- New Checkboxes for In-Scene Measurements -->
+            <div class="mb-4 flex items-center">
+                <input type="checkbox" id="showXDistance" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                <label for="showXDistance" class="mb-0 ml-2">Show X-Distance Line & Counter</label>
+            </div>
+            <div class="mb-6 flex items-center">
+                <input type="checkbox" id="showYDistance" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                <label for="showYDistance" class="mb-0 ml-2">Show Y-Distance Line & Counter (Height)</label>
+            </div>
+            <!-- End New Checkboxes -->
+
+            <!-- New Control Buttons -->
+            <button id="startButton" class="btn-primary mb-3">Start Simulation</button>
+            <button id="stopResumeButton" class="btn-secondary mb-3">Stop Simulation</button>
+            <button id="replayButton" class="btn-secondary mb-3">Replay Simulation</button>
+            <button id="resetButton" class="btn-secondary">Reset All</button>
+            <!-- End New Control Buttons -->
+
+            <!-- Simulation Statistics Display -->
             <div class="mt-8 pt-4 border-t border-gray-700">
                 <h3 class="text-xl font-bold mb-4 text-white">Simulation Stats</h3>
                 <div class="stat-item">
@@ -181,6 +276,16 @@
                     <span class="stat-label">Position (Z):</span>
                     <span id="posZStat" class="stat-value">0.00 m</span>
                 </div>
+                <!-- Console Distance Stats (already there) -->
+                <div class="stat-item">
+                    <span class="stat-label">Distance (X):</span>
+                    <span id="distXStat" class="stat-value">0.00 m</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Distance (Y):</span>
+                    <span id="distYStat" class="stat-value">0.00 m</span>
+                </div>
+                <!-- End Console Distance Stats -->
                 <div class="stat-item">
                     <span class="stat-label">Velocity (Vx):</span>
                     <span id="velXStat" class="stat-value">0.00 m/s</span>
@@ -196,8 +301,10 @@
             </div>
         </div>
 
+        <!-- 3D Simulation Canvas (Right Side) -->
         <div id="canvas-container">
-            <!-- Three.js canvas will be appended here -->
+            <!-- Three.js canvas will be appended dynamically by JavaScript here -->
+            <!-- Custom Message Box for alerts (replaces alert()) -->
             <div id="message-box" class="rounded-lg shadow-lg hidden">
                 <p id="message-text" class="text-lg"></p>
                 <button onclick="document.getElementById('message-box').style.display = 'none';">OK</button>
@@ -205,43 +312,94 @@
         </div>
     </div>
 
-    <!-- Three.js CDN -->
+    <!-- Three.js Library CDN (r128) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- OrbitControls CDN -->
+    <!-- OrbitControls Library CDN for camera interaction -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- CSS2DRenderer for rendering HTML labels in 3D space -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
+
     <script>
-        // Global variables for Three.js scene
-        let scene, camera, renderer, projectile, trajectoryLine;
-        let ground, axesHelper;
-        let controls; // Variable for OrbitControls
+        // --- Global Variables ---
+        let scene, camera, renderer, ground, axesHelper, controls, cssRenderer;
+        let activeProjectile; // Reference to the currently visible 3D object
+        const projectiles = {}; // Object to store different THREE.Mesh objects for shapes
 
-        // Physics variables
-        let initialVelocity = 50; // m/s
-        let launchAngle = 45;    // degrees
-        let gravity = 9.81;      // m/s^2
+        // --- New 3D Measurement Elements ---
+        let xDistanceLine, yDistanceLine;
+        let xDistanceLabel, yDistanceLabel; // CSS2DObjects for text labels
 
-        let velocityX, velocityY, velocityZ;
-        let positionX, positionY, positionZ;
-        let time = 0;
-        let simulationRunning = false;
-        let animationFrameId;
+        // --- Physics Parameters ---
+        let initialVelocity = 50; // Initial speed of the projectile (meters/second)
+        let launchAngle = 45;    // Angle of launch from the horizontal (degrees)
+        let gravity = 9.81;      // Acceleration due to gravity (meters/second^2)
 
-        const timeStep = 0.016; // Approximately 60 frames per second
-        const trajectoryPoints = [];
-        const maxTrajectoryPoints = 2000; // Max points for the trajectory line
+        let airResistanceEnabled = false; // Flag to enable/disable air resistance
+        let dragCoefficient = 0.47; // Default drag coefficient for a sphere
+        const AIR_DENSITY = 1.225; // Density of air (kg/m^3) at standard conditions
 
-        // UI elements
+        // --- Current Simulation State Variables ---
+        let currentVelocityX, currentVelocityY, currentVelocityZ; // Instantaneous velocities
+        let positionX, positionY, positionZ; // Current position of the projectile
+        let time = 0; // Current simulation time
+        let simulationRunning = false; // Flag to control physics updates
+        let animationFrameId; // To store the ID of the requestAnimationFrame
+        let simulationStartedOnce = false; // To track if a simulation has been run at least once
+
+        const timeStep = 0.016; // Time step for physics calculations (approx. 60 FPS)
+        const trajectoryPoints = []; // Array to store points for the trajectory line
+        const maxTrajectoryPoints = 2000; // Maximum number of points for the trajectory line
+
+        // --- Projectile Properties (Mass, Area, Default Drag Coefficient) ---
+        // These properties are crucial for air resistance calculations
+        const projectileProperties = {
+            ball: {
+                mass: 1.0, // Mass of the ball (kg)
+                radius: 0.5, // Radius of the ball (m)
+                Cd: 0.47, // Drag coefficient for a smooth sphere
+                // Function to calculate cross-sectional area
+                getArea: (props) => Math.PI * props.radius * props.radius,
+                mesh: null // Placeholder for the actual THREE.Mesh object
+            },
+            car: {
+                mass: 1000.0, // Mass of the car (kg) - simplified for demo
+                width: 3.0, height: 1.0, depth: 1.0, // Dimensions for a simple box car
+                Cd: 0.3, // Typical drag coefficient for a car
+                getArea: (props) => props.width * props.height, // Frontal area (width * height)
+                mesh: null
+            },
+            arrow: {
+                mass: 0.1, // Mass of the arrow (kg)
+                cylRadius: 0.1, cylHeight: 3.0, // Cylinder dimensions for arrow body
+                coneRadius: 0.1, coneHeight: 0.5, // Cone dimensions for arrow tip
+                Cd: 0.05, // Very low drag coefficient for an aerodynamic arrow
+                getArea: (props) => Math.PI * props.cylRadius * props.cylRadius, // Cross-sectional area (using cylinder base area)
+                mesh: null
+            }
+        };
+
+        // --- UI Element References ---
         const initialVelocityInput = document.getElementById('initialVelocity');
         const launchAngleInput = document.getElementById('launchAngle');
         const gravityInput = document.getElementById('gravity');
+        const projectileShapeSelect = document.getElementById('projectileShape');
+        const enableAirResistanceCheckbox = document.getElementById('enableAirResistance');
+        const airResistanceOptionsDiv = document.getElementById('airResistanceOptions');
+        const dragCoefficientInput = document.getElementById('dragCoefficient');
+        const showXDistanceCheckbox = document.getElementById('showXDistance');
+        const showYDistanceCheckbox = document.getElementById('showYDistance');
         const startButton = document.getElementById('startButton');
+        const stopResumeButton = document.getElementById('stopResumeButton'); // New
+        const replayButton = document.getElementById('replayButton');       // New
         const resetButton = document.getElementById('resetButton');
 
-        // Stat displays
+        // --- Stat Display References ---
         const timeStat = document.getElementById('timeStat');
         const posXStat = document.getElementById('posXStat');
         const posYStat = document.getElementById('posYStat');
         const posZStat = document.getElementById('posZStat');
+        const distXStat = document.getElementById('distXStat');
+        const distYStat = document.getElementById('distYStat');
         const velXStat = document.getElementById('velXStat');
         const velYStat = document.getElementById('velYStat');
         const velZStat = document.getElementById('velZStat');
@@ -250,258 +408,608 @@
         const messageText = document.getElementById('message-text');
 
         /**
-         * Displays a custom message box instead of alert().
-         * @param {string} message - The message to display.
+         * Displays a custom message box to the user. This replaces native alert()
+         * for better UI integration and to comply with modern web practices.
+         * @param {string} message - The message text to be displayed.
          */
         function showMessageBox(message) {
             messageText.textContent = message;
-            messageBox.style.display = 'block';
+            messageBox.style.display = 'block'; // Make the message box visible
         }
 
         /**
-         * Initializes the Three.js scene, camera, renderer, and objects.
+         * Creates and initializes all the 3D mesh objects for different projectile shapes.
+         * These are initially hidden and added to the 'projectiles' object.
+         */
+        function createProjectiles() {
+            const material = new THREE.MeshPhongMaterial({ color: 0xffa500 }); // Consistent orange color for all projectiles
+
+            // Create Ball Mesh
+            const ballGeometry = new THREE.SphereGeometry(projectileProperties.ball.radius, 32, 32);
+            const ballMesh = new THREE.Mesh(ballGeometry, material);
+            ballMesh.visible = false; // Hide initially
+            projectiles.ball = ballMesh;
+            scene.add(ballMesh);
+
+            // Create Car Mesh (represented by a simple stretched box)
+            const carGeometry = new THREE.BoxGeometry(
+                projectileProperties.car.width,
+                projectileProperties.car.height,
+                projectileProperties.car.depth
+            );
+            const carMesh = new THREE.Mesh(carGeometry, material);
+            carMesh.visible = false; // Hide initially
+            projectiles.car = carMesh;
+            scene.add(carMesh);
+
+            // Create Arrow Mesh (a group combining a cylinder and a cone)
+            const arrowGroup = new THREE.Group(); // Use a Group to combine multiple geometries
+            const cylinderGeometry = new THREE.CylinderGeometry(
+                projectileProperties.arrow.cylRadius,
+                projectileProperties.arrow.cylRadius,
+                projectileProperties.arrow.cylHeight,
+                32
+            );
+            const coneGeometry = new THREE.ConeGeometry(
+                projectileProperties.arrow.coneRadius,
+                projectileProperties.arrow.coneHeight,
+                32
+            );
+
+            const cylinderMesh = new THREE.Mesh(cylinderGeometry, material);
+            const coneMesh = new THREE.Mesh(coneGeometry, material);
+
+            // Position the cone at the tip of the cylinder to form an arrow shape
+            cylinderMesh.position.y = 0; // Center cylinder on its local origin
+            coneMesh.position.y = projectileProperties.arrow.cylHeight / 2 + projectileProperties.arrow.coneHeight / 2; // Place cone on top of cylinder
+
+            arrowGroup.add(cylinderMesh);
+            arrowGroup.add(coneMesh);
+            arrowGroup.rotation.z = -Math.PI / 2; // Rotate the arrow group to point along the X-axis initially
+            arrowGroup.visible = false; // Hide initially
+            projectiles.arrow = arrowGroup;
+            scene.add(arrowGroup);
+        }
+
+        /**
+         * Sets the currently active 3D projectile mesh based on the selected shape name.
+         * Hides all other projectile meshes.
+         * @param {string} shapeName - The name of the shape to make active ('ball', 'car', 'arrow').
+         */
+        function setActiveProjectile(shapeName) {
+            // Hide all projectile meshes first
+            for (const key in projectiles) {
+                if (projectiles.hasOwnProperty(key)) {
+                    projectiles[key].visible = false;
+                }
+            }
+            // Make the selected projectile mesh visible
+            activeProjectile = projectiles[shapeName];
+            if (activeProjectile) {
+                activeProjectile.visible = true;
+            }
+
+            // Update the drag coefficient input field with the default Cd for the selected shape
+            dragCoefficientInput.value = projectileProperties[shapeName].Cd;
+        }
+
+        /**
+         * Initializes the Three.js scene, camera, renderer, lighting, and primary objects.
          */
         function initScene() {
-            // Scene
+            // Scene: The container for all objects, lights, and cameras
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x36454F); // Dark blue-gray background
+            scene.background = new THREE.Color(0x36454F); // Set a dark blue-gray background color
 
-            // Camera
-            // PerspectiveCamera( fov, aspect, near, far )
+            // Camera: Defines the viewpoint for rendering the scene
+            // PerspectiveCamera( fieldOfView, aspectRatio, nearClippingPlane, farClippingPlane )
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.set(0, 50, 100); // Initial camera position (x, y, z)
-            // camera.lookAt(0, 0, 0); // No longer needed as OrbitControls will manage this
+            camera.position.set(0, 50, 100); // Initial camera position (X, Y, Z)
 
-            // Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
-            const canvasContainer = document.getElementById('canvas-container');
-            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
-            canvasContainer.appendChild(renderer.domElement);
+            // WebGLRenderer: Renders the 3D scene
+            renderer = new THREE.WebGLRenderer({ antialias: true }); // Enable anti-aliasing for smoother edges
+            renderer.setPixelRatio(window.devicePixelRatio); // Set device pixel ratio for high-DPI screens
+            const canvasContainer = document.getElementById('canvas-container'); // Get the container for the canvas
+            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight); // Set renderer size to container size
+            canvasContainer.appendChild(renderer.domElement); // Add the renderer's canvas to the DOM
 
-            // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Soft white light
+            // CSS2DRenderer: Renders HTML elements over the 3D scene, tracking 3D positions
+            cssRenderer = new THREE.CSS2DRenderer();
+            cssRenderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            cssRenderer.domElement.classList.add('css-renderer-container'); // Add CSS class for styling
+            canvasContainer.appendChild(cssRenderer.domElement); // Add CSS renderer's DOM element
+
+            // Lighting: Essential for seeing objects in a 3D scene
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Soft, diffuse light from all directions
             scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // Brighter light from one direction
-            directionalLight.position.set(100, 100, 50);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // Light from a specific direction (like the sun)
+            directionalLight.position.set(100, 100, 50); // Position of the directional light
             scene.add(directionalLight);
 
-            // Ground Plane
-            const groundGeometry = new THREE.PlaneGeometry(200, 200);
-            // Use MeshLambertMaterial for simple lighting interaction
-            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x556B2F, side: THREE.DoubleSide }); // Dark olive green
+            // Ground Plane: A flat surface for context
+            const groundGeometry = new THREE.PlaneGeometry(200, 200); // 200x200 unit plane
+            const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x556B2F, side: THREE.DoubleSide }); // Dark olive green material
             ground = new THREE.Mesh(groundGeometry, groundMaterial);
-            ground.rotation.x = Math.PI / 2; // Rotate to lie flat on the XZ plane
+            ground.rotation.x = Math.PI / 2; // Rotate the plane to lie flat on the XZ plane
             scene.add(ground);
 
-            // Projectile (Sphere)
-            const sphereGeometry = new THREE.SphereGeometry(1.5, 32, 32); // Radius 1.5, 32 segments
-            const sphereMaterial = new THREE.MeshPhongMaterial({ color: 0xffa500 }); // Orange color, shiny
-            projectile = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            scene.add(projectile);
+            // Create all projectile meshes (they are initially hidden)
+            createProjectiles();
 
-            // Trajectory Line
-            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 }); // White line
-            const lineGeometry = new THREE.BufferGeometry();
+            // Trajectory Line: Visualizes the path of the projectile
+            const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, linewidth: 2 }); // White line material
+            const lineGeometry = new THREE.BufferGeometry(); // BufferGeometry for efficient line drawing
             trajectoryLine = new THREE.Line(lineGeometry, lineMaterial);
             scene.add(trajectoryLine);
 
-            // Axes Helper for orientation
-            axesHelper = new THREE.AxesHelper(50); // Size 50
+            // Axes Helper: Displays X (red), Y (green), Z (blue) axes for orientation
+            axesHelper = new THREE.AxesHelper(50); // Axes length of 50 units
             scene.add(axesHelper);
 
-            // Initialize OrbitControls for camera interaction
-            // This allows the user to rotate, zoom, and pan the camera
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-            // Set a target for the camera to orbit around (e.g., the origin)
-            controls.target.set(0, 0, 0);
-            // Enable damping for smoother movement
-            controls.enableDamping = true;
-            controls.dampingFactor = 0.05;
-            // Limit zooming range for better control
-            controls.minDistance = 10;
-            controls.maxDistance = 200;
-            // No need for custom mouse listeners now, OrbitControls handles them
-            // Remove previous camera drag logic as OrbitControls replaces it
-            // renderer.domElement.removeEventListener('mousedown', ...); etc.
+            // --- Initialize In-Scene Measurement Elements ---
+            const measurementLineMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff, linewidth: 3 }); // Cyan color
 
-            // Handle window resize
+            // X-Distance Line (from (0,0,0) to (posX, 0, 0))
+            const xLinePoints = [];
+            xDistanceLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(xLinePoints), measurementLineMaterial);
+            xDistanceLine.visible = false;
+            scene.add(xDistanceLine);
+
+            // Y-Distance Line (from (posX,0,0) to (posX, posY, 0))
+            const yLinePoints = [];
+            yDistanceLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints(yLinePoints), measurementLineMaterial);
+            yDistanceLine.visible = false;
+            scene.add(yDistanceLine);
+
+            // X-Distance Label
+            const xDiv = document.createElement('div');
+            xDiv.className = 'label';
+            xDiv.textContent = 'X: 0.00 m';
+            xDistanceLabel = new THREE.CSS2DObject(xDiv);
+            xDistanceLabel.visible = false;
+            scene.add(xDistanceLabel);
+
+            // Y-Distance Label (Height)
+            const yDiv = document.createElement('div');
+            yDiv.className = 'label';
+            yDiv.textContent = 'Y: 0.00 m';
+            yDistanceLabel = new THREE.CSS2DObject(yDiv);
+            yDistanceLabel.visible = false;
+            scene.add(yDistanceLabel);
+            // --- End In-Scene Measurement Elements Initialization ---
+
+            // OrbitControls: Allows user interaction to control the camera (rotate, zoom, pan)
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.target.set(0, 0, 0); // Camera orbits around the origin (0,0,0)
+            controls.enableDamping = true; // Enable damping for smoother camera movement
+            controls.dampingFactor = 0.05; // Damping factor
+            controls.minDistance = 10; // Closest zoom distance
+            controls.maxDistance = 200; // Furthest zoom distance
+
+            // Event listener for window resizing to keep the canvas responsive
             window.addEventListener('resize', onWindowResize);
         }
 
         /**
-         * Resizes the renderer and camera on window resize.
+         * Handles window resize events to maintain responsive canvas size.
          */
         function onWindowResize() {
             const canvasContainer = document.getElementById('canvas-container');
-            camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight; // Update camera aspect ratio
+            camera.updateProjectionMatrix(); // Update camera's projection matrix
+            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight); // Resize the WebGL renderer
+            cssRenderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight); // Resize the CSS2D renderer
         }
 
         /**
-         * Resets the simulation parameters to initial values.
+         * Resets the simulation parameters to initial values, clearing projectile position,
+         * trajectory, and statistics.
+         * @param {boolean} fullReset - If true, resets simulationStartedOnce and input values.
          */
-        function resetSimulation() {
-            simulationRunning = false;
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-            }
+        function resetSimulation(fullReset = true) {
+            simulationRunning = false; // Stop physics updates
 
-            // Reset physics variables
+            // Reset physics state variables
             time = 0;
             positionX = 0;
             positionY = 0;
-            positionZ = 0; // Z-axis for depth, but motion is in XY plane for now
+            positionZ = 0;
 
-            // Reset projectile position in 3D scene
-            projectile.position.set(0, 0, 0);
+            // Reset active projectile's 3D position and rotation in the scene
+            if (activeProjectile) {
+                activeProjectile.position.set(0, 0, 0);
+                activeProjectile.rotation.set(0, 0, 0); // Reset base rotation
+                // Re-orient specific shapes if needed (e.g., arrow to point along X-axis)
+                if (activeProjectile === projectiles.arrow) {
+                     activeProjectile.rotation.z = -Math.PI / 2;
+                }
+            }
 
-            // Clear trajectory line
+            // Clear all points from the trajectory line
             trajectoryPoints.length = 0;
-            updateTrajectoryLine();
+            updateTrajectoryLine(); // Update the line geometry to reflect empty points
 
-            // Update stats display
+            // Reset visibility of in-scene measurement elements
+            xDistanceLine.visible = false;
+            yDistanceLine.visible = false;
+            xDistanceLabel.visible = false;
+            yDistanceLabel.visible = false;
+
+            // Update UI stats to reflect reset values
             updateStats();
 
+            // Manage button states
             startButton.textContent = 'Start Simulation';
             startButton.disabled = false;
+            stopResumeButton.textContent = 'Stop Simulation';
+            stopResumeButton.disabled = true; // Disable stop until simulation starts
+            replayButton.disabled = true; // Disable replay until a simulation has run
+
+            if (fullReset) {
+                simulationStartedOnce = false;
+                // You could also reset input values here if desired, e.g.:
+                // initialVelocityInput.value = "50";
+                // launchAngleInput.value = "45";
+                // gravityInput.value = "9.81";
+                // projectileShapeSelect.value = "ball";
+                // enableAirResistanceCheckbox.checked = false;
+                // airResistanceOptionsDiv.style.display = 'none';
+                // dragCoefficientInput.value = "0.47";
+                // showXDistanceCheckbox.checked = false;
+                // showYDistanceCheckbox.checked = false;
+            }
         }
 
         /**
-         * Starts the projectile motion simulation.
+         * Starts or resumes the projectile motion simulation. Reads parameters from UI inputs
+         * and performs input validation if it's a fresh start.
          */
-        function startSimulation() {
+        function startOrResumeSimulation() {
             if (simulationRunning) {
-                showMessageBox("Simulation is already running or completed. Please reset to start a new one.");
+                // If already running, do nothing (or show message, though button should be disabled)
                 return;
             }
 
-            // Get values from inputs
-            initialVelocity = parseFloat(initialVelocityInput.value);
-            launchAngle = parseFloat(launchAngleInput.value);
-            gravity = parseFloat(gravityInput.value);
+            if (!simulationStartedOnce) { // Only validate inputs on the very first start
+                // Parse input values
+                initialVelocity = parseFloat(initialVelocityInput.value);
+                launchAngle = parseFloat(launchAngleInput.value);
+                gravity = parseFloat(gravityInput.value);
+                airResistanceEnabled = enableAirResistanceCheckbox.checked;
+                dragCoefficient = parseFloat(dragCoefficientInput.value);
 
-            if (isNaN(initialVelocity) || initialVelocity < 0) {
-                showMessageBox("Please enter a valid initial velocity (non-negative number).");
-                return;
+                // Input validation
+                if (isNaN(initialVelocity) || initialVelocity < 0) {
+                    showMessageBox("Please enter a valid initial velocity (non-negative number).");
+                    return;
+                }
+                if (isNaN(launchAngle) || launchAngle < 0 || launchAngle > 90) {
+                    showMessageBox("Please enter a valid launch angle (0-90 degrees).");
+                    return;
+                }
+                if (isNaN(gravity) || gravity < 0) {
+                    showMessageBox("Please enter a valid gravity value (non-negative number).");
+                    return;
+                }
+                if (airResistanceEnabled && (isNaN(dragCoefficient) || dragCoefficient < 0)) {
+                    showMessageBox("Please enter a valid drag coefficient (non-negative number).");
+                    return;
+                }
+
+                // If starting fresh, perform a full reset (clears trajectory, etc.)
+                resetSimulation(false); // Do a soft reset (don't clear input values)
+
+                // Convert launch angle from degrees to radians for trigonometric functions
+                const angleRad = (launchAngle * Math.PI) / 180;
+
+                // Calculate initial velocity components
+                currentVelocityX = initialVelocity * Math.cos(angleRad);
+                currentVelocityY = initialVelocity * Math.sin(angleRad);
+                currentVelocityZ = 0; // Assuming 2D projectile motion in the X-Y plane
+
+                // Set initial position
+                positionX = 0;
+                positionY = 0;
+                positionZ = 0;
+
+                simulationStartedOnce = true;
             }
-            if (isNaN(launchAngle) || launchAngle < 0 || launchAngle > 90) {
-                showMessageBox("Please enter a valid launch angle (0-90 degrees).");
-                return;
+
+            simulationRunning = true; // Start physics updates
+            startButton.textContent = 'Running...';
+            startButton.disabled = true; // Disable start button while simulation is active
+            stopResumeButton.textContent = 'Stop Simulation';
+            stopResumeButton.disabled = false;
+            replayButton.disabled = false; // Enable replay once simulation starts
+
+            // Set initial visibility for in-scene elements based on checkboxes
+            xDistanceLine.visible = showXDistanceCheckbox.checked;
+            yDistanceLine.visible = showYDistanceCheckbox.checked;
+            xDistanceLabel.visible = showXDistanceCheckbox.checked;
+            yDistanceLabel.visible = showYDistanceCheckbox.checked;
+        }
+
+        /**
+         * Toggles the simulation state between running and stopped/paused.
+         */
+        function stopOrResumeSimulation() {
+            if (simulationRunning) {
+                simulationRunning = false; // Pause the simulation
+                stopResumeButton.textContent = 'Resume Simulation';
+                startButton.disabled = false; // Re-enable start button for resume
+            } else {
+                // Check if simulation has ended (landed)
+                if (time > 0 && positionY <= 0) {
+                    showMessageBox("Simulation has completed. Please use 'Replay Simulation' or 'Reset All' to start a new one.");
+                    return;
+                }
+                simulationRunning = true; // Resume the simulation
+                stopResumeButton.textContent = 'Stop Simulation';
+                startButton.disabled = true; // Disable start button again
             }
-            if (isNaN(gravity) || gravity < 0) {
-                showMessageBox("Please enter a valid gravity value (non-negative number).");
-                return;
-            }
+        }
 
-            resetSimulation(); // Ensure a clean start
+        /**
+         * Replays the simulation from the beginning with the current parameters.
+         */
+        function replaySimulation() {
+            // First, load current parameters (they are already stored in global vars from last start)
+            // Then, perform a soft reset to clear current state without changing inputs
+            resetSimulation(false); // false means don't do a full reset of inputs
 
-            // Convert angle to radians for trigonometric functions
-            const angleRad = (launchAngle * Math.PI) / 180;
+            // Re-calculate initial velocities based on current input values (already parsed in startOrResumeSimulation)
+            const angleRad = (parseFloat(launchAngleInput.value) * Math.PI) / 180;
+            currentVelocityX = parseFloat(initialVelocityInput.value) * Math.cos(angleRad);
+            currentVelocityY = parseFloat(initialVelocityInput.value) * Math.sin(angleRad);
+            currentVelocityZ = 0;
 
-            // Initial velocities
-            velocityX = initialVelocity * Math.cos(angleRad);
-            velocityY = initialVelocity * Math.sin(angleRad);
-            velocityZ = 0; // Assuming 2D motion in X-Y plane for simplicity
-
-            positionX = 0;
-            positionY = 0;
-            positionZ = 0;
+            // Ensure the in-scene measurement visibility is respected for the replay
+            xDistanceLine.visible = showXDistanceCheckbox.checked;
+            yDistanceLine.visible = showYDistanceCheckbox.checked;
+            xDistanceLabel.visible = showXDistanceCheckbox.checked;
+            yDistanceLabel.visible = showYDistanceCheckbox.checked;
 
             simulationRunning = true;
             startButton.textContent = 'Running...';
             startButton.disabled = true;
-
-            animate(); // Start the animation loop
+            stopResumeButton.textContent = 'Stop Simulation';
+            stopResumeButton.disabled = false;
+            replayButton.disabled = false; // Should already be enabled if replay is clicked, but ensures it.
+            simulationStartedOnce = true; // Confirms simulation has actively been started.
         }
 
+
         /**
-         * Updates the projectile's position based on physics equations.
+         * Updates the projectile's position and velocity based on physics equations.
+         * This includes the effects of gravity and optionally air resistance.
          */
         function updatePhysics() {
-            if (!simulationRunning) return;
+            // Get properties of the currently selected projectile shape
+            const currentShape = projectileShapeSelect.value;
+            const props = projectileProperties[currentShape];
+            const mass = props.mass;
+            const area = props.getArea(props); // Cross-sectional area for drag calculation
+            const currentDragCoefficient = airResistanceEnabled ? dragCoefficient : 0; // Use input Cd or 0
 
-            // Update time
+            // Calculate current speed of the projectile
+            const speed = Math.sqrt(
+                currentVelocityX * currentVelocityX +
+                currentVelocityY * currentVelocityY +
+                currentVelocityZ * currentVelocityZ
+            );
+
+            let accelerationX = 0;
+            let accelerationY = -gravity; // Gravity acts downwards (negative Y-axis)
+            let accelerationZ = 0;
+
+            // Apply air resistance force if enabled and if the projectile is moving
+            if (airResistanceEnabled && speed > 0.01) { // Check speed > 0.01 to avoid division by zero
+                // Calculate drag force magnitude: F_D = 0.5 * rho * v^2 * C_D * A
+                const dragMagnitude = 0.5 * AIR_DENSITY * speed * speed * currentDragCoefficient * area;
+
+                // Drag force acts opposite to the direction of velocity.
+                // Calculate drag acceleration components (F_drag / mass)
+                accelerationX -= (dragMagnitude * currentVelocityX) / (speed * mass);
+                accelerationY -= (dragMagnitude * currentVelocityY) / (speed * mass);
+                accelerationZ -= (dragMagnitude * currentVelocityZ) / (speed * mass);
+            }
+
+            // Update velocities using Euler integration: v_new = v_old + a * dt
+            currentVelocityX += accelerationX * timeStep;
+            currentVelocityY += accelerationY * timeStep;
+            currentVelocityZ += accelerationZ * timeStep;
+
+            // Update positions using Euler integration: p_new = p_old + v_new * dt
+            positionX += currentVelocityX * timeStep;
+            positionY += currentVelocityY * timeStep;
+            positionZ += currentVelocityZ * timeStep;
+
+            // Increment simulation time
             time += timeStep;
 
-            // Calculate new positions
-            positionX = velocityX * time;
-            positionY = (initialVelocity * Math.sin((launchAngle * Math.PI) / 180)) * time - 0.5 * gravity * time * time;
-            // positionZ remains 0 for 2D projectile motion, but we include it for 3D representation
-            positionZ = 0;
+            // Update the 3D position of the active projectile in the scene
+            if (activeProjectile) {
+                activeProjectile.position.set(positionX, positionY, positionZ);
 
-            // Update projectile's 3D position
-            projectile.position.set(positionX, positionY, positionZ);
-
-            // Add current point to trajectory
-            trajectoryPoints.push(new THREE.Vector3(positionX, positionY, positionZ));
-            if (trajectoryPoints.length > maxTrajectoryPoints) {
-                trajectoryPoints.shift(); // Remove oldest point if max reached
+                // Orient projectile based on its velocity direction (for car and arrow)
+                if (currentShape === 'arrow') {
+                    // Arrow should point along its current velocity vector
+                    const velocityVector = new THREE.Vector3(currentVelocityX, currentVelocityY, currentVelocityZ).normalize();
+                    const initialDirection = new THREE.Vector3(1, 0, 0); // Arrow's local forward is +X
+                    activeProjectile.quaternion.setFromUnitVectors(initialDirection, velocityVector);
+                } else if (currentShape === 'car') {
+                    // Car should also point roughly along its current horizontal velocity
+                    const velocityVector = new THREE.Vector3(currentVelocityX, 0, currentVelocityZ).normalize(); // Only consider horizontal direction for car
+                    const initialDirection = new THREE.Vector3(1, 0, 0); // Car's local forward is +X
+                    activeProjectile.quaternion.setFromUnitVectors(initialDirection, velocityVector);
+                }
             }
-            updateTrajectoryLine();
+
+            // --- Update In-Scene Measurement Lines and Counters ---
+            if (showXDistanceCheckbox.checked) {
+                const xLinePoints = [
+                    new THREE.Vector3(0, 0, 0), // Origin on ground
+                    new THREE.Vector3(positionX, 0, 0) // Point on X-axis at current X position
+                ];
+                xDistanceLine.geometry.setFromPoints(xLinePoints);
+                xDistanceLine.geometry.attributes.position.needsUpdate = true; // Tell Three.js to update buffer
+                xDistanceLine.visible = true;
+                xDistanceLabel.position.set(positionX / 2, 5, 0); // Position label roughly midway on the line, slightly above ground
+                xDistanceLabel.element.textContent = `X: ${positionX.toFixed(2)} m`;
+                xDistanceLabel.visible = true;
+            } else {
+                xDistanceLine.visible = false;
+                xDistanceLabel.visible = false;
+            }
+
+            if (showYDistanceCheckbox.checked) {
+                const yLinePoints = [
+                    new THREE.Vector3(positionX, 0, 0), // Point on ground directly below projectile
+                    new THREE.Vector3(positionX, positionY, 0) // Projectile's current position
+                ];
+                yDistanceLine.geometry.setFromPoints(yLinePoints);
+                yDistanceLine.geometry.attributes.position.needsUpdate = true;
+                yDistanceLine.visible = true;
+                yDistanceLabel.position.set(positionX + 5, positionY / 2, 0); // Position label roughly midway on the line, slightly to the side
+                yDistanceLabel.element.textContent = `Y: ${positionY.toFixed(2)} m`;
+                yDistanceLabel.visible = true;
+            } else {
+                yDistanceLine.visible = false;
+                yDistanceLabel.visible = false;
+            }
+            // --- End Update In-Scene Measurement ---
+
+
+            // Add the current position to the trajectory line points
+            trajectoryPoints.push(new THREE.Vector3(positionX, positionY, positionZ));
+            // Keep trajectory points array within max limit for performance
+            if (trajectoryPoints.length > maxTrajectoryPoints) {
+                trajectoryPoints.shift(); // Remove the oldest point
+            }
+            updateTrajectoryLine(); // Update the 3D line geometry
 
             // Update instantaneous velocities for display
-            const currentVelocityY = (initialVelocity * Math.sin((launchAngle * Math.PI) / 180)) - gravity * time;
-            velXStat.textContent = `${velocityX.toFixed(2)} m/s`;
+            velXStat.textContent = `${currentVelocityX.toFixed(2)} m/s`;
             velYStat.textContent = `${currentVelocityY.toFixed(2)} m/s`;
-            velZStat.textContent = `${velocityZ.toFixed(2)} m/s`;
+            velZStat.textContent = `${currentVelocityZ.toFixed(2)} m/s`;
 
-
-            // Stop simulation if projectile hits or goes below ground (Y <= 0)
+            // Check for simulation termination condition: projectile hits or goes below ground (Y <= 0)
             if (positionY <= 0 && time > 0) {
-                simulationRunning = false;
-                cancelAnimationFrame(animationFrameId);
-                startButton.textContent = 'Simulation Complete!';
-                showMessageBox("Simulation complete! Projectile landed.");
+                simulationRunning = false; // Stop further physics updates
+                startButton.textContent = 'Simulation Completed'; // Indicate completion
+                startButton.disabled = true; // Keep disabled as it's completed
+                stopResumeButton.textContent = 'Simulation Ended';
+                stopResumeButton.disabled = true; // Disable stop/resume button
+                replayButton.disabled = false; // Enable replay
+
+                // Inform user that camera controls are still active
+                showMessageBox("Simulation complete! Projectile landed. You can now rotate and zoom the camera to inspect the trajectory, or replay it!");
+
+                // Ensure final positions are displayed for in-scene counters
+                if (showXDistanceCheckbox.checked) {
+                    xDistanceLabel.element.textContent = `X: ${positionX.toFixed(2)} m`;
+                }
+                 if (showYDistanceCheckbox.checked) {
+                    yDistanceLabel.element.textContent = `Y: ${positionY.toFixed(2)} m`;
+                }
             }
 
-            // Update stats display
+            // Update all simulation statistics on the UI
             updateStats();
         }
 
         /**
-         * Updates the geometry of the trajectory line.
+         * Updates the 3D geometry of the trajectory line to reflect new points.
          */
         function updateTrajectoryLine() {
             trajectoryLine.geometry.setFromPoints(trajectoryPoints);
+            trajectoryLine.geometry.attributes.position.needsUpdate = true; // Required for dynamic line updates
         }
 
         /**
-         * Updates the display of simulation statistics.
+         * Updates all the numerical statistics displayed in the controls panel.
          */
         function updateStats() {
             timeStat.textContent = `${time.toFixed(2)} s`;
             posXStat.textContent = `${positionX.toFixed(2)} m`;
             posYStat.textContent = `${positionY.toFixed(2)} m`;
             posZStat.textContent = `${positionZ.toFixed(2)} m`;
+            // Display X and Y distances travelled (simply current position in this 2D simulation)
+            distXStat.textContent = `${positionX.toFixed(2)} m`;
+            distYStat.textContent = `${positionY.toFixed(2)} m`;
         }
 
         /**
-         * Main animation loop.
+         * Main animation loop. This function is called continuously by requestAnimationFrame.
+         * It updates camera controls, runs physics (if simulation is active), and renders the scene.
          */
         function animate() {
+            // Request the next animation frame, ensuring the loop runs continuously
             animationFrameId = requestAnimationFrame(animate);
 
-            // Update OrbitControls in the animation loop for smooth interaction
+            // Always update OrbitControls to allow continuous camera interaction
             if (controls) {
                 controls.update();
             }
 
-            updatePhysics();
+            // Only run physics updates if the simulation is currently active
+            if (simulationRunning) {
+                updatePhysics();
+            }
 
+            // Always render the WebGL scene
             renderer.render(scene, camera);
+            // Always render the CSS2D scene for HTML labels
+            cssRenderer.render(scene, camera);
         }
 
-        // Event Listeners
-        startButton.addEventListener('click', startSimulation);
-        resetButton.addEventListener('click', resetSimulation);
+        // --- Event Listeners ---
+        // Changed startButton to call startOrResumeSimulation directly.
+        startButton.addEventListener('click', startOrResumeSimulation);
+        stopResumeButton.addEventListener('click', stopOrResumeSimulation); // New
+        replayButton.addEventListener('click', replaySimulation);         // New
+        resetButton.addEventListener('click', () => resetSimulation(true)); // Pass true for full reset
 
-        // Initialize scene on window load
+        // Event listener for changing projectile shape
+        projectileShapeSelect.addEventListener('change', (event) => {
+            setActiveProjectile(event.target.value); // Change the 3D model
+            resetSimulation(true); // Full reset when shape changes
+        });
+
+        // Event listener for toggling air resistance
+        enableAirResistanceCheckbox.addEventListener('change', () => {
+            if (enableAirResistanceCheckbox.checked) {
+                airResistanceOptionsDiv.style.display = 'block'; // Show drag coefficient input
+            } else {
+                airResistanceOptionsDiv.style.display = 'none'; // Hide drag coefficient input
+            }
+            resetSimulation(true); // Full reset when air resistance setting changes
+        });
+
+        // Event listeners for new in-scene measurement options
+        showXDistanceCheckbox.addEventListener('change', () => {
+            // Lines and labels should only be visible if checked AND simulation is running/completed
+            xDistanceLine.visible = showXDistanceCheckbox.checked && (simulationRunning || time > 0);
+            xDistanceLabel.visible = showXDistanceCheckbox.checked && (simulationRunning || time > 0);
+            if (!simulationRunning && time === 0) { // If reset, ensure labels are cleared immediately
+                xDistanceLabel.element.textContent = `X: 0.00 m`;
+            }
+        });
+        showYDistanceCheckbox.addEventListener('change', () => {
+            yDistanceLine.visible = showYDistanceCheckbox.checked && (simulationRunning || time > 0);
+            yDistanceLabel.visible = showYDistanceCheckbox.checked && (simulationRunning || time > 0);
+            if (!simulationRunning && time === 0) {
+                yDistanceLabel.element.textContent = `Y: 0.00 m`;
+            }
+        });
+
+
+        // --- Initialization on Window Load ---
         window.onload = function() {
-            initScene();
-            resetSimulation(); // Set initial state
-            animate(); // Start animation loop even when not simulating for camera movement
+            initScene(); // Initialize the Three.js scene and objects
+            setActiveProjectile(projectileShapeSelect.value); // Set the initial projectile shape (default 'ball')
+            resetSimulation(true); // Perform a full initial reset
+            animate(); // Start the continuous animation loop that drives everything
         };
     </script>
 </body>
