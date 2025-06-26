@@ -207,10 +207,13 @@
 
     <!-- Three.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script>
         // Global variables for Three.js scene
         let scene, camera, renderer, projectile, trajectoryLine;
         let ground, axesHelper;
+        let controls; // Variable for OrbitControls
 
         // Physics variables
         let initialVelocity = 50; // m/s
@@ -267,7 +270,7 @@
             // PerspectiveCamera( fov, aspect, near, far )
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.set(0, 50, 100); // Initial camera position (x, y, z)
-            camera.lookAt(0, 0, 0); // Look at the origin
+            // camera.lookAt(0, 0, 0); // No longer needed as OrbitControls will manage this
 
             // Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -307,36 +310,20 @@
             axesHelper = new THREE.AxesHelper(50); // Size 50
             scene.add(axesHelper);
 
-            // Camera controls - basic orbit functionality
-            let isDragging = false;
-            let previousMousePosition = { x: 0, y: 0 };
-
-            renderer.domElement.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                previousMousePosition = { x: e.clientX, y: e.clientY };
-            });
-
-            renderer.domElement.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-
-                const deltaX = e.clientX - previousMousePosition.x;
-                const deltaY = e.clientY - previousMousePosition.y;
-
-                // Rotate around Y-axis for horizontal movement
-                camera.position.x = camera.position.x * Math.cos(deltaX * 0.01) - camera.position.z * Math.sin(deltaX * 0.01);
-                camera.position.z = camera.position.x * Math.sin(deltaX * 0.01) + camera.position.z * Math.cos(deltaX * 0.01);
-
-                // Rotate around X-axis for vertical movement (simplified)
-                camera.position.y += deltaY * 0.5;
-                if (camera.position.y < 5) camera.position.y = 5; // Prevent camera from going below ground
-
-                camera.lookAt(0, 0, 0); // Always look at the origin
-                previousMousePosition = { x: e.clientX, y: e.clientY };
-            });
-
-            renderer.domElement.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
+            // Initialize OrbitControls for camera interaction
+            // This allows the user to rotate, zoom, and pan the camera
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            // Set a target for the camera to orbit around (e.g., the origin)
+            controls.target.set(0, 0, 0);
+            // Enable damping for smoother movement
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            // Limit zooming range for better control
+            controls.minDistance = 10;
+            controls.maxDistance = 200;
+            // No need for custom mouse listeners now, OrbitControls handles them
+            // Remove previous camera drag logic as OrbitControls replaces it
+            // renderer.domElement.removeEventListener('mousedown', ...); etc.
 
             // Handle window resize
             window.addEventListener('resize', onWindowResize);
@@ -495,6 +482,11 @@
          */
         function animate() {
             animationFrameId = requestAnimationFrame(animate);
+
+            // Update OrbitControls in the animation loop for smooth interaction
+            if (controls) {
+                controls.update();
+            }
 
             updatePhysics();
 
